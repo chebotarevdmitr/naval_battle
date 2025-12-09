@@ -1,7 +1,7 @@
 /**
  * Проект: naval_battle
- * Этап 5: Скрытие кораблей противника + случайная расстановка
- * Цель: игрок видит только результаты выстрелов, корабли — скрыты
+ * Этап 6: Добавление ИИ-бота, который стреляет по игроку
+ * Цель: реализовать двухстороннюю игру — игрок ↔ бот
  */
 
 #include <iostream>
@@ -11,69 +11,62 @@
 #include <vector>
 
 const int BOARD_SIZE = 10;
-const int NUM_SHIPS = 3; // Начнём с 3 однопалубных кораблей
+const int PLAYER_SHIPS = 2; // твои корабли
+const int ENEMY_SHIPS = 3;  // корабли бота
 
-// Вспомогательная структура для хранения корабля (пока только однопалубные)
 struct Ship
 {
   int row, col;
-  bool isSunk() const { return true; } // однопалубный — сразу убит при попадании
+  bool isSunk() const { return true; }
 };
 
-// Функция вывода поля — НО скрывает корабли противника!
+// === Вывод полей ===
+
 void printPlayerBoard(const char board[BOARD_SIZE][BOARD_SIZE], const std::string &title)
 {
   std::cout << "\n"
             << title << "\n";
   std::cout << "   ";
   for (int col = 0; col < BOARD_SIZE; ++col)
-  {
     std::cout << col << " ";
-  }
   std::cout << "\n";
   for (int row = 0; row < BOARD_SIZE; ++row)
   {
-    char rowLabel = 'A' + row;
-    std::cout << rowLabel << " |";
+    std::cout << char('A' + row) << " |";
     for (int col = 0; col < BOARD_SIZE; ++col)
     {
-      std::cout << board[row][col] << ' ';
+      char c = board[row][col];
+      // Игрок видит свои корабли ('S'), попадания ('X'), промахи ('.')
+      std::cout << c << ' ';
     }
     std::cout << "|\n";
   }
 }
 
-// Для противника: показываем ТОЛЬКО выстрелы, корабли скрыты!
 void printEnemyView(const char board[BOARD_SIZE][BOARD_SIZE], const std::string &title)
 {
   std::cout << "\n"
             << title << " (корабли скрыты!)\n";
   std::cout << "   ";
   for (int col = 0; col < BOARD_SIZE; ++col)
-  {
     std::cout << col << " ";
-  }
   std::cout << "\n";
   for (int row = 0; row < BOARD_SIZE; ++row)
   {
-    char rowLabel = 'A' + row;
-    std::cout << rowLabel << " |";
+    std::cout << char('A' + row) << " |";
     for (int col = 0; col < BOARD_SIZE; ++col)
     {
-      char cell = board[row][col];
-      // Скрываем корабли ('S') — показываем только результаты выстрелов
-      if (cell == 'S')
-      {
-        std::cout << "~ "; // как будто клетка не исследована
-      }
+      char c = board[row][col];
+      if (c == 'S')
+        std::cout << "~ "; // скрываем
       else
-      {
-        std::cout << cell << ' '; // '.' или 'X'
-      }
+        std::cout << c << ' ';
     }
     std::cout << "|\n";
   }
 }
+
+// === Ввод и парсинг ===
 
 bool parseCoordinate(const std::string &input, int &outRow, int &outCol)
 {
@@ -92,38 +85,28 @@ bool parseCoordinate(const std::string &input, int &outRow, int &outCol)
   return (outRow >= 0 && outRow < BOARD_SIZE && outCol >= 0 && outCol < BOARD_SIZE);
 }
 
-// Проверка, можно ли поставить корабль в (row, col): не на краю других кораблей
+// === Расстановка кораблей ===
+
 bool canPlaceShip(const std::vector<Ship> &ships, int row, int col)
 {
-  // Проверяем вокруг: 3x3 область
   for (int dr = -1; dr <= 1; ++dr)
-  {
     for (int dc = -1; dc <= 1; ++dc)
     {
-      int r = row + dr;
-      int c = col + dc;
+      int r = row + dr, c = col + dc;
       if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE)
         continue;
-      // Есть ли там уже корабль?
-      for (const auto &ship : ships)
-      {
-        if (ship.row == r && ship.col == c)
-        {
+      for (const auto &s : ships)
+        if (s.row == r && s.col == c)
           return false;
-        }
-      }
     }
-  }
   return true;
 }
 
-// Генерация случайных кораблей (однопалубных)
-void generateEnemyShips(std::vector<Ship> &ships, char enemyBoard[BOARD_SIZE][BOARD_SIZE])
+void generateShips(std::vector<Ship> &ships, char board[BOARD_SIZE][BOARD_SIZE], int count)
 {
-  // Очистка
   for (int i = 0; i < BOARD_SIZE; ++i)
     for (int j = 0; j < BOARD_SIZE; ++j)
-      enemyBoard[i][j] = '~';
+      board[i][j] = '~';
 
   ships.clear();
   std::random_device rd;
@@ -131,42 +114,76 @@ void generateEnemyShips(std::vector<Ship> &ships, char enemyBoard[BOARD_SIZE][BO
   std::uniform_int_distribution<> dis(0, BOARD_SIZE - 1);
 
   int attempts = 0;
-  while (ships.size() < NUM_SHIPS && attempts < 1000)
+  while ((int)ships.size() < count && attempts < 1000)
   {
-    int row = dis(gen);
-    int col = dis(gen);
-    if (canPlaceShip(ships, row, col))
+    int r = dis(gen), c = dis(gen);
+    if (canPlaceShip(ships, r, c))
     {
-      ships.push_back({row, col});
-      enemyBoard[row][col] = 'S';
+      ships.push_back({r, c});
+      board[r][c] = 'S';
     }
     attempts++;
   }
 }
 
+// === Ход ИИ (бота) ===
+
+void botTurn(char playerBoard[BOARD_SIZE][BOARD_SIZE], std::mt19937 &gen)
+{
+  std::uniform_int_distribution<> rowDis(0, BOARD_SIZE - 1);
+  std::uniform_int_distribution<> colDis(0, BOARD_SIZE - 1);
+
+  while (true)
+  {
+    int row = rowDis(gen);
+    int col = colDis(gen);
+    char &cell = playerBoard[row][col];
+
+    if (cell == 'X' || cell == '.')
+      continue; // уже стреляли
+
+    std::cout << "\n🤖 Бот стреляет в " << char('A' + row) << col << "... ";
+
+    if (cell == 'S')
+    {
+      std::cout << "💥 Попал!\n";
+      cell = 'X';
+      // Дополнительный ход — просто продолжаем цикл
+    }
+    else
+    {
+      std::cout << "💦 Мимо.\n";
+      cell = '.';
+      break; // промах → ход заканчивается
+    }
+  }
+}
+
+// === Основная функция ===
+
 int main()
 {
   char playerBoard[BOARD_SIZE][BOARD_SIZE];
   char enemyBoard[BOARD_SIZE][BOARD_SIZE];
-  std::vector<Ship> enemyShips;
+  std::vector<Ship> playerShips, enemyShips;
 
-  // Инициализация игрока (пока пусто)
-  for (int i = 0; i < BOARD_SIZE; ++i)
-    for (int j = 0; j < BOARD_SIZE; ++j)
-      playerBoard[i][j] = '~';
+  // Генерация кораблей
+  generateShips(playerShips, playerBoard, PLAYER_SHIPS);
+  generateShips(enemyShips, enemyBoard, ENEMY_SHIPS);
 
-  // Генерация кораблей противника
-  generateEnemyShips(enemyShips, enemyBoard);
+  // Генератор случайных чисел (общий для всей игры)
+  std::random_device rd;
+  std::mt19937 gen(rd());
 
   std::string input;
   int row, col;
 
   while (true)
   {
-    printPlayerBoard(playerBoard, "Ваше поле");
+    printPlayerBoard(playerBoard, "Ваше поле (S = ваш корабль)");
     printEnemyView(enemyBoard, "Поле противника");
 
-    std::cout << "\nВведите координату для выстрела (например, D5) или 'quit': ";
+    std::cout << "\nВаш ход. Введите координату (например, D5) или 'quit': ";
     std::cin >> input;
 
     if (input == "quit")
@@ -190,14 +207,16 @@ int main()
 
     if (cell == 'S')
     {
-      std::cout << "💥 Попал! Дополнительный ход!\n";
+      std::cout << "💥 Вы попали! Дополнительный ход!\n";
       cell = 'X';
-      // Проверка: убит ли корабль? (для однопалубного — да)
+      // остаёмся в цикле → игрок стреляет снова
     }
     else
     {
-      std::cout << "💦 Мимо! Ход противника... (скоро добавим ИИ)\n";
+      std::cout << "💦 Вы промахнулись. Ход бота...\n";
       cell = '.';
+      // Ход бота
+      botTurn(playerBoard, gen);
     }
   }
 
