@@ -1,6 +1,23 @@
+# Папки сборки
 build/
-*.o
+build-*/
+build_*/
+build-release/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Исполняемые файлы
+naval_battle
 *.exe
 *.bin
-.vscode/
-cmake-build-*/
+
+# Архивы и бинарники
+*.tar.gz
+*.zip
+*.tar.xz
+
+# Qt-специфичные (на будущее)
+*.pro.user
+*.autosave
