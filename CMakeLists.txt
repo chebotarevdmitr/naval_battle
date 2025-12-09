@@ -1,13 +1,20 @@
-# CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
-project(naval_battle VERSION 0.1 LANGUAGES CXX)
+project(naval_battle VERSION 0.2 LANGUAGES CXX)
 
-# Требуем C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
-# Добавляем исполняемый файл из src/
-add_executable(naval_battle src/main.cpp)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-# (Опционально) Указываем, куда ставить бинарник
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# Указываем, где заголовки
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+# Собираем все .cpp из src/
+file(GLOB_RECURSE SOURCES src/*.cpp)
+
+add_executable(naval_battle ${SOURCES})
+
+target_link_libraries(naval_battle Qt6::Core Qt6::Widgets)
