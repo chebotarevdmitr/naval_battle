@@ -9,10 +9,8 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-# Указываем, где заголовки
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Собираем все .cpp из src/
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 add_executable(naval_battle ${SOURCES})
