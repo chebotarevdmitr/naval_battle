@@ -9,20 +9,23 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# ДОБАВИЛИ Multimedia
+# Находим Qt6 с Multimedia (для звуков)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Multimedia)
 
-file(GLOB_RECURSE SOURCES
-    src/*.cpp
-    include/*.h
+# Явно указываем все исходники
+set(SOURCES
+    src/game/Game.cpp
+    src/gui/MainWindow.cpp
+    src/gui/main.cpp
+    include/game/Game.h
+    include/gui/MainWindow.h
 )
 
-add_executable(naval_battle
-    ${SOURCES}
-    assets.qrc
-)
+# Создаём исполняемый файл
+add_executable(naval_battle ${SOURCES})
 
+# Указываем, где искать заголовки
 target_include_directories(naval_battle PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-# ДОБАВИЛИ Qt6::Multimedia
+# Линкуем с Qt
 target_link_libraries(naval_battle Qt6::Core Qt6::Widgets Qt6::Multimedia)

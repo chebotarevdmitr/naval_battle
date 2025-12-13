@@ -3,8 +3,9 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QTimer>       // ← для анимации
-#include <QSoundEffect> // ← уже есть в .h, но можно и здесь
+#include <QTimer>
+#include <QSoundEffect>
+#include <QCoreApplication> // ← обязательно для applicationDirPath()
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -12,9 +13,11 @@ MainWindow::MainWindow(QWidget *parent)
   setWindowTitle("Морской бой — Qt версия");
   resize(800, 600);
 
-  // Инициализация звуков
-  hitSound.setSource(QUrl("qrc:/assets/hit.wav"));
-  missSound.setSource(QUrl("qrc:/assets/miss.wav"));
+  // Инициализация звуков из файловой системы
+  QString hitPath = QCoreApplication::applicationDirPath() + "/../assets/hit.wav";
+  QString missPath = QCoreApplication::applicationDirPath() + "/../assets/miss.wav";
+  hitSound.setSource(QUrl::fromLocalFile(hitPath));
+  missSound.setSource(QUrl::fromLocalFile(missPath));
 
   auto *centralWidget = new QWidget(this);
   setCentralWidget(centralWidget);
@@ -63,8 +66,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() = default;
 
-// === Звуковые методы ===
-
 void MainWindow::playHitSound()
 {
   hitSound.play();
@@ -74,8 +75,6 @@ void MainWindow::playMissSound()
 {
   missSound.play();
 }
-
-// === Основная логика ===
 
 void MainWindow::onPlayerCellClicked(int row, int col)
 {
