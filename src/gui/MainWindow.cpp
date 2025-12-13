@@ -5,13 +5,16 @@
 #include <QHBoxLayout>
 #include <QTimer>
 #include <QSoundEffect>
-#include <QCoreApplication> // ← обязательно для applicationDirPath()
+#include <QCoreApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
   setWindowTitle("Морской бой — Qt версия");
   resize(800, 600);
+
+  // Голубой фон всего окна (море)
+  setStyleSheet("background-color: #b3e0ff;");
 
   // Инициализация звуков из файловой системы
   QString hitPath = QCoreApplication::applicationDirPath() + "/../assets/hit.wav";
@@ -21,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
 
   auto *centralWidget = new QWidget(this);
   setCentralWidget(centralWidget);
+  centralWidget->setStyleSheet("background-color: #b3e0ff;"); // фон центральной области
 
   auto *mainLayout = new QVBoxLayout(centralWidget);
 
@@ -59,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
   // Статус
   statusLabel = new QLabel("Ваш ход. Кликните по полю противника.");
   statusLabel->setAlignment(Qt::AlignCenter);
+  statusLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #003366;");
   mainLayout->addWidget(statusLabel);
 
   updateBoard();
@@ -83,11 +88,6 @@ void MainWindow::onPlayerCellClicked(int row, int col)
 
   if (isHit)
   {
-    // Анимация: красный фон на 300 мс
-    enemyCells[row][col]->setStyleSheet("background-color: #ff6b6b; color: white; font-weight: bold;");
-    QTimer::singleShot(300, this, [this, row, col]()
-                       { enemyCells[row][col]->setStyleSheet(""); });
-
     statusLabel->setText("💥 Попал! Дополнительный ход!");
     playHitSound();
   }
@@ -109,24 +109,28 @@ void MainWindow::updateBoard()
     for (int j = 0; j < BOARD_SIZE; ++j)
     {
       Game::Cell c = game.getPlayerCell(i, j);
-      QString text;
+      QPushButton *btn = playerCells[i][j];
+
       if (c == Game::ShipPart)
       {
-        text = "S";
+        btn->setText("S");
+        btn->setStyleSheet("background-color: #8B4513; color: white; font-weight: bold; border: 1px solid #5a2f0f;");
       }
       else if (c == Game::Hit)
       {
-        text = "X";
+        btn->setText("X");
+        btn->setStyleSheet("background-color: #ff4d4d; color: white; font-weight: bold; border: 1px solid #cc0000;");
       }
       else if (c == Game::Miss)
       {
-        text = ".";
+        btn->setText(".");
+        btn->setStyleSheet("background-color: #f0f0f0; color: #555; border: 1px solid #ccc;");
       }
       else
       {
-        text = "~";
+        btn->setText("~");
+        btn->setStyleSheet("background-color: #b3e0ff; color: #2c5aa0; border: 1px solid #80c0ff;");
       }
-      playerCells[i][j]->setText(text);
     }
   }
 
@@ -136,20 +140,23 @@ void MainWindow::updateBoard()
     for (int j = 0; j < BOARD_SIZE; ++j)
     {
       Game::Cell c = game.getEnemyCell(i, j);
-      QString text;
+      QPushButton *btn = enemyCells[i][j];
+
       if (c == Game::Hit)
       {
-        text = "X";
+        btn->setText("X");
+        btn->setStyleSheet("background-color: #ff4d4d; color: white; font-weight: bold; border: 1px solid #cc0000;");
       }
       else if (c == Game::Miss)
       {
-        text = ".";
+        btn->setText(".");
+        btn->setStyleSheet("background-color: #f0f0f0; color: #555; border: 1px solid #ccc;");
       }
       else
       {
-        text = "~";
+        btn->setText("~");
+        btn->setStyleSheet("background-color: #b3e0ff; color: #2c5aa0; border: 1px solid #80c0ff;");
       }
-      enemyCells[i][j]->setText(text);
     }
   }
 }
