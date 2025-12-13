@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/assets">
+        <file>assets/hit.wav</file>
+        <file>assets/miss.wav</file>
+    </qresource>
+</RCC>

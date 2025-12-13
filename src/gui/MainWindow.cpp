@@ -3,12 +3,18 @@
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QTimer>       // ← для анимации
+#include <QSoundEffect> // ← уже есть в .h, но можно и здесь
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
   setWindowTitle("Морской бой — Qt версия");
   resize(800, 600);
+
+  // Инициализация звуков
+  hitSound.setSource(QUrl("qrc:/assets/hit.wav"));
+  missSound.setSource(QUrl("qrc:/assets/miss.wav"));
 
   auto *centralWidget = new QWidget(this);
   setCentralWidget(centralWidget);
@@ -30,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
       // Поле игрока
       playerCells[i][j] = new QPushButton("~");
       playerCells[i][j]->setFixedSize(40, 40);
-      playerCells[i][j]->setEnabled(false); // нельзя кликать по своему полю
+      playerCells[i][j]->setEnabled(false);
       playerLayout->addWidget(playerCells[i][j], i, j);
 
       // Поле противника
@@ -57,6 +63,20 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() = default;
 
+// === Звуковые методы ===
+
+void MainWindow::playHitSound()
+{
+  hitSound.play();
+}
+
+void MainWindow::playMissSound()
+{
+  missSound.play();
+}
+
+// === Основная логика ===
+
 void MainWindow::onPlayerCellClicked(int row, int col)
 {
   bool isHit = game.playerShoot(row, col);
@@ -64,11 +84,18 @@ void MainWindow::onPlayerCellClicked(int row, int col)
 
   if (isHit)
   {
+    // Анимация: красный фон на 300 мс
+    enemyCells[row][col]->setStyleSheet("background-color: #ff6b6b; color: white; font-weight: bold;");
+    QTimer::singleShot(300, this, [this, row, col]()
+                       { enemyCells[row][col]->setStyleSheet(""); });
+
     statusLabel->setText("💥 Попал! Дополнительный ход!");
+    playHitSound();
   }
   else
   {
     statusLabel->setText("💦 Мимо. Ход бота...");
+    playMissSound();
     game.botTurn();
     updateBoard();
   }
