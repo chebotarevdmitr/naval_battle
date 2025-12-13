@@ -42,60 +42,90 @@ Game::Game() : gen(std::random_device{}())
 void Game::reset()
 {
   botState = BotState();
-  generateShips(playerShips, playerBoard, 3); // ⚠️ ОПЕЧАТКА!
-  generateShips(enemyShips, enemyBoard, 3);
+  generateShips(playerBoard);
+  generateShips(enemyBoard);
 }
 
-bool Game::canPlaceShip(const std::vector<Ship> &ships, int row, int col)
+// Проверка, можно ли поставить корабль длины `size` от (row, col) в направлении (dr, dc)
+bool canPlaceShipHere(const Game::Cell board[BOARD_SIZE][BOARD_SIZE], int row, int col, int dr, int dc, int size)
 {
-  for (int dr = -1; dr <= 1; ++dr)
-    for (int dc = -1; dc <= 1; ++dc)
+  for (int i = 0; i < size; ++i)
+  {
+    int r = row + dr * i;
+    int c = col + dc * i;
+    if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE)
+      return false;
+    // Проверяем саму клетку и 3x3 вокруг
+    for (int dr2 = -1; dr2 <= 1; ++dr2)
     {
-      int r = row + dr, c = col + dc;
-      if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE)
-        continue;
-      for (const auto &s : ships)
-        if (s.row == r && s.col == c)
+      for (int dc2 = -1; dc2 <= 1; ++dc2)
+      {
+        int nr = r + dr2;
+        int nc = c + dc2;
+        if (nr < 0 || nr >= BOARD_SIZE || nc < 0 || nc >= BOARD_SIZE)
+          continue;
+        if (board[nr][nc] == Game::ShipPart)
           return false;
+      }
     }
+  }
   return true;
 }
 
-void Game::generateShips(std::vector<Ship> &ships, Cell board[BOARD_SIZE][BOARD_SIZE], int count)
+void Game::generateShips(Cell board[BOARD_SIZE][BOARD_SIZE])
 {
+  // Очистка
   for (int i = 0; i < BOARD_SIZE; ++i)
     for (int j = 0; j < BOARD_SIZE; ++j)
-      board[i][j] = Cell::Water;
+      board[i][j] = Game::Water;
 
-  ships.clear();
-  std::uniform_int_distribution<> dis(0, BOARD_SIZE - 1);
-  int attempts = 0;
-  while ((int)ships.size() < count && attempts < 1000)
+  // Классический флот
+  std::vector<int> shipSizes = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+  std::uniform_int_distribution<> rowDis(0, BOARD_SIZE - 1);
+  std::uniform_int_distribution<> colDis(0, BOARD_SIZE - 1);
+  std::uniform_int_distribution<> dirDis(0, 1); // 0 — горизонт, 1 — вертикаль
+
+  for (int size : shipSizes)
   {
-    int r = dis(gen), c = dis(gen);
-    if (canPlaceShip(ships, r, c))
+    bool placed = false;
+    int attempts = 0;
+    while (!placed && attempts < 200)
     {
-      ships.push_back({r, c});
-      board[r][c] = Cell::ShipPart; // ✅
+      int row = rowDis(gen);
+      int col = colDis(gen);
+      bool horizontal = dirDis(gen) == 0;
+      int dr = horizontal ? 0 : 1;
+      int dc = horizontal ? 1 : 0;
+
+      if (canPlaceShipHere(board, row, col, dr, dc, size))
+      {
+        for (int i = 0; i < size; ++i)
+        {
+          int r = row + dr * i;
+          int c = col + dc * i;
+          board[r][c] = Game::ShipPart;
+        }
+        placed = true;
+      }
+      attempts++;
     }
-    attempts++;
   }
 }
 
 bool Game::playerShoot(int row, int col)
 {
   Cell &cell = enemyBoard[row][col];
-  if (cell == Cell::Miss || cell == Cell::Hit)
+  if (cell == Miss || cell == Hit)
     return false;
 
-  if (cell == Cell::ShipPart)
-  { // ✅
-    cell = Cell::Hit;
+  if (cell == ShipPart)
+  {
+    cell = Hit;
     return true;
   }
   else
   {
-    cell = Cell::Miss;
+    cell = Miss;
     return false;
   }
 }
@@ -130,14 +160,14 @@ void Game::botTurn()
     botState.markShot(row, col);
     Cell &cell = playerBoard[row][col];
 
-    if (cell == Cell::ShipPart)
-    { // ✅
-      cell = Cell::Hit;
+    if (cell == ShipPart)
+    {
+      cell = Hit;
       botState.addTargetNeighbors(row, col);
     }
     else
     {
-      cell = Cell::Miss;
+      cell = Miss;
       break;
     }
   }
@@ -151,14 +181,14 @@ Game::Cell Game::getPlayerCell(int row, int col) const
 Game::Cell Game::getEnemyCell(int row, int col) const
 {
   Cell c = enemyBoard[row][col];
-  return (c == Cell::ShipPart) ? Cell::Water : c;
+  return (c == ShipPart) ? Water : c;
 }
 
 bool Game::allShipsSunk(const Cell board[BOARD_SIZE][BOARD_SIZE]) const
 {
   for (int i = 0; i < BOARD_SIZE; ++i)
     for (int j = 0; j < BOARD_SIZE; ++j)
-      if (board[i][j] == Cell::ShipPart) // ✅
+      if (board[i][j] == ShipPart)
         return false;
   return true;
 }

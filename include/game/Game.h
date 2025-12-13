@@ -8,10 +8,10 @@
 
 const int BOARD_SIZE = 10;
 
-// Внешняя структура — остаётся как есть
+// Просто для совместимости — больше не используется для логики победы
 struct Ship
 {
-  int row, col;
+  int dummy; // можно даже удалить, но оставим для будущего
 };
 
 class BotState
@@ -29,7 +29,6 @@ public:
 class Game
 {
 public:
-  // 🔥 ИЗМЕНЕНО: Ship → ShipPart (или просто убираем это значение!)
   enum Cell
   {
     Water = 0,
@@ -49,12 +48,11 @@ public:
   bool isEnemyDefeated() const;
 
 private:
-  void generateShips(std::vector<Ship> &ships, Cell board[BOARD_SIZE][BOARD_SIZE], int count);
-  bool canPlaceShip(const std::vector<Ship> &ships, int row, int col);
+  // Убрали ships из параметров — генерируем напрямую
+  void generateShips(Cell board[BOARD_SIZE][BOARD_SIZE]);
 
   Cell playerBoard[BOARD_SIZE][BOARD_SIZE];
   Cell enemyBoard[BOARD_SIZE][BOARD_SIZE];
-  std::vector<Ship> playerShips, enemyShips;
   BotState botState;
   std::mt19937 gen;
 };
