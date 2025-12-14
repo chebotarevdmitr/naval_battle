@@ -1,23 +1,35 @@
-# Папки сборки
+
+
+# Build directories
 build/
 build-*/
 build_*/
-build-release/
+
+# CMake
 CMakeCache.txt
 CMakeFiles/
 Makefile
 cmake_install.cmake
+compile_commands.json
 
-# Исполняемые файлы
+# Binaries
 naval_battle
 *.exe
 *.bin
+*.apk
 
-# Архивы и бинарники
-*.tar.gz
-*.zip
-*.tar.xz
+# QML cache
+*.qmlc
+*.jsc
 
-# Qt-специфичные (на будущее)
+# Android
+*.keystore
+local.properties
+
+# Assets (если не встраиваем через .qrc)
+# assets/*.png
+# assets/*.wav
+
+# Qt
 *.pro.user
 *.autosave
