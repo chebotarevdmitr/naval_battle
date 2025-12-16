@@ -11,29 +11,17 @@ Window {
     visible: true
     title: "Морской бой — Qt Quick"
 
-    // Обновляем поля при старте и после выстрела
-    Component.onCompleted: updateBoards()
+    // Инициализация игры при запуске
+    Component.onCompleted: game.resetGame()
 
-    function updateBoards() {
-        for (var i = 0; i < 100; i++) {
-            var r = Math.floor(i / 10)
-            var c = i % 10
-
-            // Обновление твоего поля
-            var playerVal = game.getPlayerCell(r, c)
-            var playerRect = playerRepeater.itemAt(i)
-            if (playerRect) {
-                playerRect.color = cellColor(playerVal, true)
-                playerRect.childText.text = cellText(playerVal, true)
-            }
-
-            // Обновление поля противника
-            var enemyVal = game.getEnemyCell(r, c)
-            var enemyRect = enemyRepeater.itemAt(i)
-            if (enemyRect) {
-                enemyRect.color = cellColor(enemyVal, false)
-                enemyRect.childText.text = cellText(enemyVal, false)
-            }
+    function updateCell(repeater, index, isPlayer) {
+        var r = Math.floor(index / 10)
+        var c = index % 10
+        var val = isPlayer ? game.getPlayerCell(r, c) : game.getEnemyCell(r, c)
+        var rect = repeater.itemAt(index)
+        if (rect) {
+            rect.color = cellColor(val, isPlayer)
+            rect.childText.text = cellText(val, isPlayer)
         }
     }
 
@@ -70,7 +58,7 @@ Window {
             RowLayout {
                 spacing: 50
 
-                // Твоё поле
+                // Твоё поле — статическое отображение
                 ColumnLayout {
                     Text {
                         text: "Ваше поле"
@@ -83,15 +71,24 @@ Window {
                         rowSpacing: 1
                         columnSpacing: 1
                         Repeater {
-                            id: playerRepeater
                             model: 100
                             delegate: Rectangle {
                                 width: 35
                                 height: 35
-                                color: "#b3e0ff"
+                                color: {
+                                    var r = index / 10 | 0
+                                    var c = index % 10
+                                    var val = game.getPlayerCell(r, c)
+                                    cellColor(val, true)
+                                }
                                 Text {
-                                    id: childText
                                     anchors.centerIn: parent
+                                    text: {
+                                        var r = index / 10 | 0
+                                        var c = index % 10
+                                        var val = game.getPlayerCell(r, c)
+                                        cellText(val, true)
+                                    }
                                     font.pixelSize: 14
                                 }
                             }
@@ -99,7 +96,7 @@ Window {
                     }
                 }
 
-                // Поле противника
+                // Поле противника — интерактивное
                 ColumnLayout {
                     Text {
                         text: "Поле противника"
@@ -112,15 +109,24 @@ Window {
                         rowSpacing: 1
                         columnSpacing: 1
                         Repeater {
-                            id: enemyRepeater
                             model: 100
                             delegate: Rectangle {
                                 width: 35
                                 height: 35
-                                color: "#b3e0ff"
+                                color: {
+                                    var r = index / 10 | 0
+                                    var c = index % 10
+                                    var val = game.getEnemyCell(r, c)
+                                    cellColor(val, false)
+                                }
                                 Text {
-                                    id: childText
                                     anchors.centerIn: parent
+                                    text: {
+                                        var r = index / 10 | 0
+                                        var c = index % 10
+                                        var val = game.getEnemyCell(r, c)
+                                        cellText(val, false)
+                                    }
                                     font.pixelSize: 14
                                 }
                                 MouseArea {
@@ -128,8 +134,8 @@ Window {
                                     onClicked: {
                                         var r = index / 10 | 0
                                         var c = index % 10
-                                        var isHit = game.playerShoot(r, c)
-                                        updateBoards() // обновляем сразу
+                                        game.playerShoot(r, c)
+                                        // Нет необходимости вызывать update — QML сам пересчитает color/text
                                     }
                                 }
                             }
@@ -140,10 +146,7 @@ Window {
 
             Button {
                 text: "Новая игра"
-                onClicked: {
-                    game.resetGame()
-                    updateBoards()
-                }
+                onClicked: game.resetGame()
             }
         }
     }
