@@ -1,16 +1,116 @@
+// GameView.qml
 import QtQuick
 import QtQuick.Window
+import QtQuick.Controls
+import QtQuick.Layouts
 
 Window {
-    width: 800
-    height: 600
+    id: window
+    width: 900
+    height: 700
     visible: true
-    title: "Qt Quick — работает!"
+    title: "Морской бой — Qt Quick"
 
-    Text {
-        text: "✅ Qt Quick загружен!"
-        anchors.centerIn: parent
-        font.pixelSize: 24
-        color: "#003366"
+    Rectangle {
+        anchors.fill: parent
+        color: "#b3e0ff"
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 30
+
+            Text {
+                text: "Поле противника"
+                font.pixelSize: 22
+                color: "#003366"
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            // Сетка 10x10
+            Grid {
+                id: enemyGrid
+                rows: 10
+                columns: 10
+                rowSpacing: 2
+                columnSpacing: 2
+
+                Repeater {
+                    model: 100
+                    delegate: Rectangle {
+                        id: cell
+                        width: 40
+                        height: 40
+                        color: "#b3e0ff"
+                        border.color: "#80c0ff"
+                        border.width: 1
+
+                        // Анимация взрыва
+                        Rectangle {
+                            id: explosion
+                            anchors.centerIn: parent
+                            width: 0
+                            height: 0
+                            color: "#ff3300"
+                            radius: width / 2
+                            opacity: 0
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                // Имитация попадания (позже подключим Game.cpp)
+                                if (Math.random() > 0.7) { // 30% шанс попадания
+                                    // Анимация вспышки фона
+                                    cell.color = "#ff6666"
+                                    explosion.opacity = 1
+                                    explosion.width = 0
+                                    explosion.height = 0
+
+                                    // Анимация расширения
+                                    explosionAnimator.start()
+                                    // Возврат фона через 300 мс
+                                    timer.start()
+                                } else {
+                                    cell.color = "#cccccc" // промах
+                                }
+                            }
+                        }
+
+                        // Таймер возврата цвета
+                        Timer {
+                            id: timer
+                            interval: 300
+                            onTriggered: cell.color = "#b3e0ff"
+                        }
+
+                        // Аниматор взрыва
+                        ParallelAnimation {
+                            id: explosionAnimator
+                            NumberAnimation {
+                                target: explosion
+                                property: "width"
+                                to: 60
+                                duration: 300
+                                easing.type: Easing.OutExpo
+                            }
+                            NumberAnimation {
+                                target: explosion
+                                property: "height"
+                                to: 60
+                                duration: 300
+                                easing.type: Easing.OutExpo
+                            }
+                            NumberAnimation {
+                                target: explosion
+                                property: "opacity"
+                                to: 0
+                                duration: 300
+                                easing.type: Easing.OutQuad
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
