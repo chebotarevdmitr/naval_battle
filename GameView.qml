@@ -1,4 +1,4 @@
-// GameView.qml
+// GameView.qml 
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
@@ -6,104 +6,143 @@ import QtQuick.Layouts
 
 Window {
     id: window
-    width: 900
-    height: 700
+    width: 1000
+    height: 800
     visible: true
     title: "Морской бой — Qt Quick"
 
+    // Обновляем поля при старте и после выстрела
+    Component.onCompleted: updateBoards()
+
+    function updateBoards() {
+        for (var i = 0; i < 100; i++) {
+            var r = Math.floor(i / 10)
+            var c = i % 10
+
+            // Обновление твоего поля
+            var playerVal = game.getPlayerCell(r, c)
+            var playerRect = playerRepeater.itemAt(i)
+            if (playerRect) {
+                playerRect.color = cellColor(playerVal, true)
+                playerRect.childText.text = cellText(playerVal, true)
+            }
+
+            // Обновление поля противника
+            var enemyVal = game.getEnemyCell(r, c)
+            var enemyRect = enemyRepeater.itemAt(i)
+            if (enemyRect) {
+                enemyRect.color = cellColor(enemyVal, false)
+                enemyRect.childText.text = cellText(enemyVal, false)
+            }
+        }
+    }
+
+    function cellColor(value, isPlayer) {
+        if (isPlayer) {
+            if (value === 1) return "#8B4513"; // Ship
+            if (value === 3) return "#ff4d4d"; // Hit
+            if (value === 2) return "#f0f0f0"; // Miss
+        }
+        if (value === 3) return "#ff4d4d"; // Hit
+        if (value === 2) return "#f0f0f0"; // Miss
+        return "#b3e0ff"; // Water
+    }
+
+    function cellText(value, isPlayer) {
+        if (isPlayer) {
+            if (value === 1) return "S";
+            if (value === 3) return "X";
+            if (value === 2) return ".";
+        }
+        if (value === 3) return "X";
+        if (value === 2) return ".";
+        return "~";
+    }
+
     Rectangle {
         anchors.fill: parent
-        color: "#b3e0ff"
+        color: "#e6f2ff"
 
         ColumnLayout {
             anchors.centerIn: parent
-            spacing: 30
+            spacing: 20
 
-            Text {
-                text: "Поле противника"
-                font.pixelSize: 22
-                color: "#003366"
-                Layout.alignment: Qt.AlignHCenter
-            }
+            RowLayout {
+                spacing: 50
 
-            Grid {
-                id: enemyGrid
-                rows: 10
-                columns: 10
-                rowSpacing: 2
-                columnSpacing: 2
-
-                Repeater {
-                    model: 100
-                    delegate: Rectangle {
-                        id: cell
-                        width: 40
-                        height: 40
-                        color: "#b3e0ff"
-                        border.color: "#80c0ff"
-                        border.width: 1
-
-                        Rectangle {
-                            id: explosion
-                            anchors.centerIn: parent
-                            width: 0
-                            height: 0
-                            color: "#ff3300"
-                            radius: width / 2
-                            opacity: 0
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                var row = index / 10 | 0
-                                var col = index % 10
-                                var isHit = game.playerShoot(row, col)
-
-                                if (isHit) {
-                                    cell.color = "#ff6666"
-                                    explosion.opacity = 1
-                                    explosion.width = 0
-                                    explosion.height = 0
-                                    explosionAnimator.start()
-                                    timer.start()
-                                } else {
-                                    cell.color = "#cccccc"
+                // Твоё поле
+                ColumnLayout {
+                    Text {
+                        text: "Ваше поле"
+                        font.pixelSize: 20
+                        color: "#003366"
+                    }
+                    Grid {
+                        rows: 10
+                        columns: 10
+                        rowSpacing: 1
+                        columnSpacing: 1
+                        Repeater {
+                            id: playerRepeater
+                            model: 100
+                            delegate: Rectangle {
+                                width: 35
+                                height: 35
+                                color: "#b3e0ff"
+                                Text {
+                                    id: childText
+                                    anchors.centerIn: parent
+                                    font.pixelSize: 14
                                 }
                             }
                         }
+                    }
+                }
 
-                        Timer {
-                            id: timer
-                            interval: 300
-                            onTriggered: cell.color = "#b3e0ff"
-                        }
-
-                        ParallelAnimation {
-                            id: explosionAnimator
-                            NumberAnimation {
-                                target: explosion
-                                property: "width"
-                                to: 60
-                                duration: 300
-                                easing.type: Easing.OutExpo
-                            }
-                            NumberAnimation {
-                                target: explosion
-                                property: "height"
-                                to: 60
-                                duration: 300
-                                easing.type: Easing.OutExpo
-                            }
-                            NumberAnimation {
-                                target: explosion
-                                property: "opacity"
-                                to: 0
-                                duration: 300
-                                easing.type: Easing.OutQuad
+                // Поле противника
+                ColumnLayout {
+                    Text {
+                        text: "Поле противника"
+                        font.pixelSize: 20
+                        color: "#003366"
+                    }
+                    Grid {
+                        rows: 10
+                        columns: 10
+                        rowSpacing: 1
+                        columnSpacing: 1
+                        Repeater {
+                            id: enemyRepeater
+                            model: 100
+                            delegate: Rectangle {
+                                width: 35
+                                height: 35
+                                color: "#b3e0ff"
+                                Text {
+                                    id: childText
+                                    anchors.centerIn: parent
+                                    font.pixelSize: 14
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        var r = index / 10 | 0
+                                        var c = index % 10
+                                        var isHit = game.playerShoot(r, c)
+                                        updateBoards() // обновляем сразу
+                                    }
+                                }
                             }
                         }
                     }
+                }
+            }
+
+            Button {
+                text: "Новая игра"
+                onClicked: {
+                    game.resetGame()
+                    updateBoards()
                 }
             }
         }
