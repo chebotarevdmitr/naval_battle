@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/qml">
-        <file>qml/GameView.qml</file>
+        <file>GameView.qml</file>
     </qresource>
 </RCC>
