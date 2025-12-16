@@ -26,7 +26,6 @@ Window {
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            // Сетка 10x10
             Grid {
                 id: enemyGrid
                 rows: 10
@@ -44,7 +43,6 @@ Window {
                         border.color: "#80c0ff"
                         border.width: 1
 
-                        // Анимация взрыва
                         Rectangle {
                             id: explosion
                             anchors.centerIn: parent
@@ -58,32 +56,29 @@ Window {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                // Имитация попадания (позже подключим Game.cpp)
-                                if (Math.random() > 0.7) { // 30% шанс попадания
-                                    // Анимация вспышки фона
+                                var row = index / 10 | 0
+                                var col = index % 10
+                                var isHit = game.playerShoot(row, col)
+
+                                if (isHit) {
                                     cell.color = "#ff6666"
                                     explosion.opacity = 1
                                     explosion.width = 0
                                     explosion.height = 0
-
-                                    // Анимация расширения
                                     explosionAnimator.start()
-                                    // Возврат фона через 300 мс
                                     timer.start()
                                 } else {
-                                    cell.color = "#cccccc" // промах
+                                    cell.color = "#cccccc"
                                 }
                             }
                         }
 
-                        // Таймер возврата цвета
                         Timer {
                             id: timer
                             interval: 300
                             onTriggered: cell.color = "#b3e0ff"
                         }
 
-                        // Аниматор взрыва
                         ParallelAnimation {
                             id: explosionAnimator
                             NumberAnimation {
