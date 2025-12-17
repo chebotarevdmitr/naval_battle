@@ -1,4 +1,4 @@
-// GameView.qml 
+// GameView.qml
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
@@ -11,18 +11,16 @@ Window {
     visible: true
     title: "Морской бой — Qt Quick"
 
-    // Инициализация игры при запуске
-    Component.onCompleted: game.resetGame()
-
-    function updateCell(repeater, index, isPlayer) {
-        var r = Math.floor(index / 10)
-        var c = index % 10
-        var val = isPlayer ? game.getPlayerCell(r, c) : game.getEnemyCell(r, c)
-        var rect = repeater.itemAt(index)
-        if (rect) {
-            rect.color = cellColor(val, isPlayer)
-            rect.childText.text = cellText(val, isPlayer)
+    // Подключаемся к сигналу из C++
+    Connections {
+        target: game
+        function onGameChanged() {
+            // QML автоматически пересчитает все привязки при получении сигнала
         }
+    }
+
+    Component.onCompleted: {
+        game.resetGame()
     }
 
     function cellColor(value, isPlayer) {
@@ -31,8 +29,8 @@ Window {
             if (value === 3) return "#ff4d4d"; // Hit
             if (value === 2) return "#f0f0f0"; // Miss
         }
-        if (value === 3) return "#ff4d4d"; // Hit
-        if (value === 2) return "#f0f0f0"; // Miss
+        if (value === 3) return "#ff4d4d";
+        if (value === 2) return "#f0f0f0";
         return "#b3e0ff"; // Water
     }
 
@@ -58,7 +56,7 @@ Window {
             RowLayout {
                 spacing: 50
 
-                // Твоё поле — статическое отображение
+                // Твоё поле
                 ColumnLayout {
                     Text {
                         text: "Ваше поле"
@@ -76,18 +74,16 @@ Window {
                                 width: 35
                                 height: 35
                                 color: {
-                                    var r = index / 10 | 0
-                                    var c = index % 10
-                                    var val = game.getPlayerCell(r, c)
-                                    cellColor(val, true)
+                                    var r = Math.floor(index / 10);
+                                    var c = index % 10;
+                                    cellColor(game.getPlayerCell(r, c), true)
                                 }
                                 Text {
                                     anchors.centerIn: parent
                                     text: {
-                                        var r = index / 10 | 0
-                                        var c = index % 10
-                                        var val = game.getPlayerCell(r, c)
-                                        cellText(val, true)
+                                        var r = Math.floor(index / 10);
+                                        var c = index % 10;
+                                        cellText(game.getPlayerCell(r, c), true)
                                     }
                                     font.pixelSize: 14
                                 }
@@ -96,7 +92,7 @@ Window {
                     }
                 }
 
-                // Поле противника — интерактивное
+                // Поле противника
                 ColumnLayout {
                     Text {
                         text: "Поле противника"
@@ -114,28 +110,27 @@ Window {
                                 width: 35
                                 height: 35
                                 color: {
-                                    var r = index / 10 | 0
-                                    var c = index % 10
-                                    var val = game.getEnemyCell(r, c)
-                                    cellColor(val, false)
+                                    var r = Math.floor(index / 10);
+                                    var c = index % 10;
+                                    cellColor(game.getEnemyCell(r, c), false)
                                 }
                                 Text {
                                     anchors.centerIn: parent
                                     text: {
-                                        var r = index / 10 | 0
-                                        var c = index % 10
-                                        var val = game.getEnemyCell(r, c)
-                                        cellText(val, false)
+                                        var r = Math.floor(index / 10);
+                                        var c = index % 10;
+                                        cellText(game.getEnemyCell(r, c), false)
                                     }
                                     font.pixelSize: 14
                                 }
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {
-                                        var r = index / 10 | 0
-                                        var c = index % 10
-                                        game.playerShoot(r, c)
-                                        // Нет необходимости вызывать update — QML сам пересчитает color/text
+                                        var r = Math.floor(index / 10);
+                                        var c = index % 10;
+                                        console.log("QML: выстрел по строке", r, "столбцу", c);
+                                        var result = game.playerShoot(r, c);
+                                        console.log("QML: результат от C++ =", result);
                                     }
                                 }
                             }
@@ -146,7 +141,9 @@ Window {
 
             Button {
                 text: "Новая игра"
-                onClicked: game.resetGame()
+                onClicked: {
+                    game.resetGame();
+                }
             }
         }
     }

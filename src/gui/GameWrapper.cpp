@@ -1,4 +1,4 @@
-// src / gui / GameWrapper.cpp 
+//src / gui / GameWrapper.cpp 
 #include "GameWrapper.h"
 
           GameWrapper::GameWrapper(QObject * parent)
@@ -9,12 +9,15 @@
 
 bool GameWrapper::playerShoot(int row, int col)
 {
-    return game.playerShoot(row, col);
+    bool result = game.playerShoot(row, col);
+    emit gameChanged(); // ← уведомляем QML
+    return result;
 }
 
 void GameWrapper::resetGame()
 {
     game.reset();
+    emit gameChanged();
 }
 
 int GameWrapper::getPlayerCell(int row, int col) const
